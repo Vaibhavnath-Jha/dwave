@@ -1,7 +1,9 @@
-$if not set DATA    $set DATA   "data%system.DirSep%knapsack%system.DirSep%very_small.csv"
-$if not set LPFILE  $set LPFILE "D:\Projects\ProvideQ\dwave\knapsack\knapsack_cqm.lp"
+$if not set DATA        $set DATA       "data%system.DirSep%very_small.csv"
 $setnames %DATA% fp fn fe
-$if not set METHOD  $set METHOD classic
+$if not set LPFILE      $set LPFILE     "knapsack_%fn%_writelp.lp"
+$if not set LABEL       $set LABEL      "Knapsack - %fn%"
+$if not set TIMELIMIT   $set TIMELIMIT  10
+$if not set METHOD      $set METHOD     classic
 
 
 $onEcho > knapsackScript.gms
@@ -31,10 +33,6 @@ gams.set('v', v)
 gams.set('c', c)
 $offEmbeddedCode ii, w, v, c
 
-$onecho.file>convert.opt
-cplexlp knapsack_%fn%.lp
-$offEcho.file
-
 $onecho.file>cplex.opt
 writelp knapsack_%fn%_writelp.lp
 $offEcho.file
@@ -55,6 +53,7 @@ obj..    sum(ii, v(ii)*x(ii)) =E= z;
 weight.. sum(ii, w(ii)*x(ii)) =L= c;
 
 Model knapsack /all/;
+knapsack.reslim = %TIMELIMIT%;
 options mip=cplex;
 knapsack.optfile=1;
 Solve knapsack using mip minimizing z;
@@ -64,10 +63,9 @@ $ifThenI.METHOD %METHOD%==classic
     $$call.checkErrorLevel gams knapsackScript.gms
     
 $elseIfI.METHOD %METHOD%==qc
-*    $$call.checkErrorLevel gams knapsackScript.gms mip=convert
+    $$call.checkErrorLevel gams knapsackScript.gms mip=convert
 
     $$onEmbeddedCode Python:
-    print("Begin solve")
     import re
     from datetime import datetime
     import pandas as pd
@@ -77,13 +75,9 @@ $elseIfI.METHOD %METHOD%==qc
     df = pd.read_csv(r"%DATA%", names=['costs', 'weights'], header=None)
     costs, weights = df['costs'], df['weights']
     
-    print("Reading LP File: %LPFILE%")
-    with open(r"D:\Projects\ProvideQ\dwave\dice_nonames.lp", 'rb') as f:
-        #print(f.readlines())
+    print("Reading LP File: %LPFILE%")    
+    with open(r"%LPFILE%", 'rb') as f:
         cqm = loadLP(f)
-    
-    #with open(r"%LPFILE%", 'rb') as f:
-    #    cqm = loadLP(f)
 
     def parse_solution(sampleset, costs, weights):
 
@@ -100,14 +94,20 @@ $elseIfI.METHOD %METHOD%==qc
         loc_sel_items = [int(re.findall('[0-9]', ele)[0]) for ele in selected_item_indices]
         
         print(selected_item_indices)
-        print(loc_sel_items)
+
+        selected_weights = list(weights.loc[loc_sel_items])
+        selected_costs = list(costs.loc[loc_sel_items])
+        print("\nFound best solution at energy {}".format(best.energy))
+        print("\nSelected item numbers (0-indexed):", selected_item_indices)
+        print("\nSelected item weights: {}, total = {}".format(selected_weights, sum(selected_weights)))
+        print("\nSelected item costs: {}, total = {}".format(selected_costs, sum(selected_costs)))
         
     start = datetime.now()
     sampler = LeapHybridCQMSampler()
     print("Time taken to create sampler: ", datetime.now() - start)
     
     print("Submitting CQM to solver {}.".format(sampler.solver.name))
-    sampleset = sampler.sample_cqm(cqm, label='DiceLP', time_limit=20)
+    sampleset = sampler.sample_cqm(cqm, label="%LABEL%", time_limit=%TIMELIMIT%)
     parse_solution(sampleset, costs, weights)
     
     $$offEmbeddedCode

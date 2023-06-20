@@ -166,3 +166,4 @@ Txtfiles/
 dwave.conf
 *.mps
 !knapsack.ipynb
+*.opt*
