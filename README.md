@@ -32,6 +32,6 @@ Note: The GAMS file generates the required .lp file for the problem (& respectiv
 Useful links:
 
 1. Dwave ocean API [documentation](https://docs.ocean.dwavesys.com/en/stable/index.html)
-2. Dwave [Github] (https://github.com/dwavesystems)
+2. Dwave [Github](https://github.com/dwavesystems)
 
 
