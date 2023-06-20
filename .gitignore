@@ -162,6 +162,7 @@ dwaveToken.txt
 knapsack/
 knapsack.*
 Txtfiles/
+knapsackScript.gms
 !knapsack.gms
 dwave.conf
 *.mps
