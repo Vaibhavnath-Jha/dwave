@@ -33,9 +33,13 @@ gams.set('v', v)
 gams.set('c', c)
 $offEmbeddedCode ii, w, v, c
 
-$onecho.file>cplex.opt
-writelp knapsack_%fn%_writelp.lp
-$offEcho.file
+*$onecho.file>convert.opt
+*FixedMPS knapsack_%fn%_writelpfixed.mps
+*$offEcho.file
+
+$onecho.file2>convert.opt
+dumpgdx knapsack_dump.gdx
+$offecho.file2
 
 Binary Variables
     x(ii)    selection of item i
@@ -46,15 +50,18 @@ Free Variable z  objective value;
 Equations
     obj     objective function
     weight  weight constraint
+    onebox  
     ;
 
 obj..    sum(ii, v(ii)*x(ii)) =E= z;
 
 weight.. sum(ii, w(ii)*x(ii)) =L= c;
 
+onebox.. sum(ii, x(ii)) =L= 1;
+
 Model knapsack /all/;
 knapsack.reslim = %TIMELIMIT%;
-options mip=cplex;
+options mip=convert;
 knapsack.optfile=1;
 Solve knapsack using mip minimizing z;
 $offEcho
@@ -91,9 +98,10 @@ $elseIfI.METHOD %METHOD%==qc
     
         selected_item_indices = [key for key, val in best.sample.items() if val==1.0]
         
-        loc_sel_items = [int(re.findall('[0-9]', ele)[0]) for ele in selected_item_indices]
-        
+        loc_sel_items = list({int(re.search(r'\d+', ele).group()) for ele in selected_item_indices})
+      
         print(selected_item_indices)
+        print(loc_sel_items)
 
         selected_weights = list(weights.loc[loc_sel_items])
         selected_costs = list(costs.loc[loc_sel_items])
