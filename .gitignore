@@ -168,3 +168,4 @@ dwave.conf
 *.mps
 !knapsack.ipynb
 *.opt*
+D-Wave-VRP/
